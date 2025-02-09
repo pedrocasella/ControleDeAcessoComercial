@@ -1,0 +1,19 @@
+*{
+    padding: 0;
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Barra Lateral */
+.aside-left{
+    width: 20%;
+    height: 100%;
+    position: fixed;
+    border-right: solid #323232 1px;
+}
+
+.aside-left .ul-aside-btn{
+    list-style: none;
+    
+}
+/*-------------*/
