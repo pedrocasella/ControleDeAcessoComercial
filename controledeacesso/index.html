@@ -1,24 +1,198 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="./main.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script src="./../face-api.min.js"></script>
     <title>Controle de Acesso - Painel</title>
 </head>
 <body>
     <aside class="aside-left" id="aside-left">
         <div class="logo-area">
-            <div class="logo"></div>
+            <center>
+                <div class="logo"></div>
+            </center>
         </div>
         <ul class="ul-aside-btn">
-            <li><p class="btn-text">Cadastro de Movimentação</p></li>
+            <li id="painel-btn"><p class="btn-text" >Painel</p></li>
+            <li id="salas-btn"><p class="btn-text"  >Salas</p></li>
+            <li id="movimentado-btn"><p class="btn-text" >Movimentado</p></li>
             <li><p class="btn-text">Movimentações</p></li>
             <li><p class="btn-text">Usuários</p></li>
         </ul>
     </aside>
     <section class="main" id="main">
+        
+        <section class="painel-area" id="painel-area">
+            <h2>Painel</h2>
+            <select name="" id="select-camera-painel"></select><br>
+            <ul class="dados-faciais-painel-ul">
+                <li>
+                    <div class="camera-div">
+                        <video id="video-painel" width="640" height="480" autoplay></video>
+                    </div>
+                </li>
+                <li class="dados-faciais-painel-li" id="dados-faciais-painel-li">
+                    <div class="dados-faciais-aviso" id="dados-faciais-aviso"></div>
+                </li>
+            </ul>
 
+            <div class="autorizacao-div-area">
+                <center>
+                    <div class="auth-message" id="auth-message">Acesso Autorizado</div>
+                </center>
+            </div>
+            
+        </section>
+        <section class="salas-area" id="salas-area">
+            <h2>Salas</h2>
+            <ul class="filtros-salas-ul">
+                <li>
+                    <input type="text" placeholder="Nome da Sala; Número da Sala">
+                </li>
+                <li>
+                    <div class="filtrar-salas-btn" id="filtrar-salas-btn">Filtrar</div>
+                </li>
+                <li>
+                    <div class="criar-salas-btn" id="criar-salas-btn">Criar Sala</div>
+                </li>
+            </ul>
+            <div class="list-salas-area" id="list-salas-area">
+
+            </div>
+        </section>
+        <section class="cadastro-sala-area" id="cadastro-sala-area">
+            <h2>Cadastro de Sala</h2><br>
+            <ul class="cadastro-sala-ul">
+                <li>
+                    <p class="title">Nome da Sala</p>
+                    <input type="text" id="cadastro-sala-nome-input" placeholder="Nome da Sala" autocomplete="off">
+                </li>
+                <li>
+                    <p class="title">Nº da Sala</p>
+                    <input type="number" id="cadastro-sala-nSala-input" value="1" autocomplete="off">
+                </li>
+                <li>
+                    <p class="title">Nº Andar</p>
+                    <input type="number" id="cadastro-sala-andar-input" value="1">
+                </li>
+
+            </ul><br>
+            <h4>Responsáveis pela Sala</h4>
+            <ul class="responsaveis-sala-ul">
+                <li>
+                    <p class="title">Responsáveis pela Sala</p>
+                    <select name="" id="" disabled>
+                        <option value="null">--Selecione um Responsável</option>
+                    </select>
+                </li>
+                <li>
+                    <p class="title">Atribuir Nome Fantasia</p>
+                    <input type="text" placeholder="Nome Fantasia" disabled>
+                </li>
+                <li>
+                    <p class="title">Atribuir Razão Social</p>
+                    <input type="text" placeholder="Razão Social" disabled>
+                </li>
+                <li>
+                    <p class="title">Atribuir CNPJ</p>
+                    <input type="text" placeholder="CNPJ" disabled>
+                </li>
+                <li>
+                    <p class="title">Telefone Comercial</p>
+                    <input type="text" placeholder="Telefone" disabled>
+                </li>
+                <li>
+                    <p class="title">Descrição da Atividade da Sala</p>
+                    <textarea type="text" placeholder="Descrição" disabled></textarea>
+                </li>
+            </ul>
+            <ul class="btns-ul">
+                <li>
+                    <div class="cadastrar-sala-btn" id="cadastrar-sala-btn">Cadastrar Sala</div>
+                </li>
+                <li>
+                    <div class="cancelar-cadastrar-sala-btn" id="cancelar-cadastrar-sala-btn">Cancelar</div>
+                </li>
+            </ul>
+        </section>
+        <section class="movimentado-area" id="movimentado-area">
+            <h2>Movimentados</h2>
+            <ul class="movimentados-filtros-ul">
+                <li><input type="text" id="procurar-movimentado-input" placeholder="Nome; CPF; Celular; Usuário"></li>
+                <li><div class="filtrar-movimentado-btn" id="filtrar-movimentado-btn">Filtrar</div></li>
+                <li><div class="F" id="criar-movimentado-btn">Criar Movimentado</div></li>
+            </ul>
+            <div class="list-movimentado-area" id="list-movimentado-area">
+
+            </div>
+        </section>
+        <section class="cadastro-movimentado-area" id="cadastro-movimentado-area">
+            <h2>Cadastro de Movimentado</h2><br>
+            <ul class="cadastro-movimentado-ul">
+                <li>
+                    
+                    <div class="cadastro-movimentado-foto" id="cadastro-movimentado-foto"></div>
+                    
+                    <ul class="btns-ul" id="btns-ul">
+                        <li><div class="foto-icon"></div></li>
+                        <li><div class="video-icon" id="video-foto-btn"></div></li>
+                        <li><div class="block-icon" id="block-foto-btn"></div></li>
+                    </ul>
+                    <div id="camera-container">
+                        <select id="camera-select"></select>
+                        <video id="camera-feed" autoplay playsinline></video>
+                        <div id="nome-exibido"></div>
+                        <div class="buttons" id="buttons-camera-container">
+                            <button id="capture-btn" class="btn">📸 Tirar Foto</button>
+                            <button id="close-btn" class="btn">❌ Fechar</button>
+                        </div>
+                    </div>
+                </li>
+                <li>
+                    <ul class="movimentado-inputs-ul">
+                        <li>
+                            <p class="title">Nome Completo</p>
+                            <input type="text" placeholder="Nome Completo" id="nome-completo-cadastro-movimentado-input">
+                        </li>
+                        <li>
+                            <p class="title">Nome de Usuário</p>
+                            <input type="text" placeholder="Nome de Usuário" id="nome-usuario-cadastro-movimentado-input">
+                        </li>
+                        <li>
+                            <p class="title">Data de Nascimento</p>
+                            <input type="date" id="nascimento-cadastro-movimentado-input">
+                        </li>
+                        <li>
+                            <p class="title">Telefone</p>
+                            <input type="text" placeholder="Telefone (Opcional)" id="telefone-cadastro-movimentado-input">
+                        </li>
+                        <li>
+                            <p class="title">Celular</p>
+                            <input type="text" placeholder="Celular (Opcional)" id="celular-cadastro-movimentado-input">
+                        </li>
+                        <li>
+                            <p class="title">CPF</p>
+                            <input type="text" placeholder="CPF" id="cpf-cadastro-movimentado-input">
+                        </li>
+                    </ul>
+                    
+                </li>
+            </ul>
+            <ul class="btn-ul">
+                <li>
+                    <div class="salvar-cadastro-movimentado-btn" id="salvar-cadastro-movimentado-btn">Salvar</div>
+                </li>
+                <li>
+                    <div class="cancelar-cadastro-movimentado-btn" id="cancelar-cadastro-movimentado-btn">Cancelar</div>
+                </li>
+            </ul>
+            
+        </section>
     </section>
+    <script src="./app.js" type="module"></script>
 </body>
 </html>
