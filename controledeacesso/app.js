@@ -257,8 +257,18 @@ async function listCameras() {
             const option = document.createElement("option");
             option.value = device.deviceId;
             option.textContent = device.label || `Câmera ${index + 1}`;
-            cameraSelect.appendChild(option);
+            cameraSelect.appendChild(option)
+
             cameraPainelSelect.appendChild(option);
+        });
+
+        videoDevices.forEach((device, index) => {
+            const option = document.createElement("option");
+            option.value = device.deviceId;
+            option.textContent = device.label || `Câmera ${index + 1}`;
+            cameraSelect.appendChild(option)
+
+            //cameraPainelSelect.appendChild(option);
         });
 
         if (videoDevices.length > 0) {
