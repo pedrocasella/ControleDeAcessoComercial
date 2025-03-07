@@ -10,6 +10,20 @@
     <title>Controle de Acesso - Painel</title>
 </head>
 <body>
+    <div class="black-background" id="black-background">
+        <center id="close-modal">
+            <div class="gerar-movimentacao-modal" id="gerar-movimentacao-modal">
+                <h3>Gerar Movimentação</h3>
+                <div class="gerar-movimentacao-foto-usuario" id="gerar-movimentacao-foto-usuario"></div>
+                <p class="gerar-movimentacao-nome-usuario" id="gerar-movimentacao-nome-usuario">Pedro Lucas dos Santos Casella</p>
+                <p class="gerar-movimentacao-cpf" id="gerar-movimentacao-cpf">18051165764</p>
+                <ul class="inputs-ul">
+                    <li><select name="" id="gerar-movimentacao-destino-input"><option value="null">--Selecione um Destino--</option></select></li>
+                    <li><div class="gerar-movimentacao-modal-btn" id="gerar-movimentacao-modal-btn">Gerar</div></li>
+                </ul>
+            </div>
+        </center>
+    </div>
     <aside class="aside-left" id="aside-left">
         <div class="logo-area">
             <center>
@@ -191,6 +205,15 @@
                 </li>
             </ul>
             
+        </section>
+        <section class="movimentacao-area" id="movimentacao-area">
+            <h2>Movimentações</h2>
+            <ul class="movimentacao-filtros-ul">
+                <li><input type="text" id="procurar-movimentacao-input" placeholder="Nome; CPF; Nome da Sala; Nº Andar"></li>
+            </ul>
+            <div class="list-movimentacao-area" id="list-movimentacao-area">
+
+            </div>
         </section>
     </section>
     <script src="./app.js" type="module"></script>

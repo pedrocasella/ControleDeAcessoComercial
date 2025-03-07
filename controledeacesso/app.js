@@ -16,6 +16,30 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
 
+    // Função para obter a data e hora formatadas
+    function getFormattedDateTime() {
+        const now = new Date();
+        const options = {
+            hour: '2-digit', 
+            minute: '2-digit', 
+            second: '2-digit', 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric'
+        };
+
+        const formattedDateTime = now.toLocaleString('pt-BR', options).replace(',', ' -');
+        return formattedDateTime;
+    }
+
+  //Fechar Modais
+    document.getElementById('black-background').addEventListener('click', (e)=>{
+        if(e.target.id == 'black-background' || e.target.id == 'close-modal'){
+            document.getElementById('black-background').style.display = 'none'
+            document.getElementById('gerar-movimentacao-modal').style.display = 'none'
+        }
+    })
+
   //Navegação
   document.getElementById('painel-btn').addEventListener('click', ()=>{
     document.getElementById('painel-area').style.display = 'block'
@@ -70,6 +94,8 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
                     <li><div class="excluir-sala-btn" id="excluir-sala-btn" data-sala-uuid="${sala.uuid}"></div></li>
                 </ul><br>
             `
+
+            document.getElementById('gerar-movimentacao-destino-input').innerHTML += `<option value="${sala.uuid}">${sala.nome}</option>`
             })
         }
         
@@ -360,7 +386,7 @@ loadFaceAPI();
             if(data){
                 Object.values(data).forEach((movimentado)=>{
                     document.getElementById('list-movimentado-area').innerHTML += `
-                                    <ul class="movimentado-ul" data-movimentado-uuid="${movimentado.uuid}">
+                                    <ul class="movimentado-ul" id="movimentado-ul-${movimentado.uuid}" data-movimentado-uuid="${movimentado.uuid}">
                     <li>
                         <div class="movimentado-foto-list" style="background-image: url(${movimentado.foto})"></div>
                     </li>
@@ -387,6 +413,33 @@ loadFaceAPI();
     }
 
     exibirMovimentados()
+
+    //Editar ou Excluir o Movimentado
+    document.getElementById('list-movimentado-area').addEventListener('click', (e)=>{
+        const id = e.target.id
+        const movimentadoId = e.target.dataset.movimentadoUuid
+        if(id == "excluir-movimentado-btn" && movimentadoId != undefined){
+            const movimentadoRef = ref(database, 'controledeacessocomercial/movimentados' + movimentadoId)
+            remove(movimentadoRef).then(()=>{
+                console.log(movimentadoId)
+                document.getElementById(`movimentado-ul-${movimentadoId}`).remove()
+                Toastify({
+                    text: "Movimentado Excluido com Sucesso!",
+                    duration: 3000,
+                    newWindow: true,
+                    close: true,
+                    gravity: "bottom", // `top` or `bottom`
+                    position: "right", // `left`, `center` or `right`
+                    stopOnFocus: true, // Prevents dismissing of toast on hover
+                    style: {
+                        background: 'red',
+                    },
+                    onClick: function(){} // Callback after click
+                }).showToast();
+                exibirMovimentados()
+            })
+        }
+    })
 
     //Abrir Criação de movimentado
     document.getElementById('criar-movimentado-btn').addEventListener('click', ()=>{
@@ -532,6 +585,12 @@ async function captureAndSavemovimentado() {
             position: "center",
             backgroundColor: "green",
         }).showToast();
+
+        document.getElementById('cadastro-movimentado-foto').style.backgroundImage = 'url(./../img/profile.png)'
+        document.querySelectorAll('.cadastro-movimentado-area input').forEach((input)=>{
+            input.value = ''
+        })
+        exibirMovimentados()
 
     } catch (error) {
         console.error("Erro ao capturar e salvar movimentação:", error);
@@ -686,4 +745,95 @@ document.getElementById('select-camera-painel').addEventListener('change', ()=>{
     startFaceDetection()
 })
 
+//Gerar Movimentação
+    //Abrir Modal de Movimentação
+    document.getElementById('list-movimentado-area').addEventListener('click', (e)=>{
+        const id = e.target.id
+        const movimentadoUuid = e.target.dataset.movimentadoUuid
+
+        if(id == 'gerar-movimentacao-list-btn' && movimentadoUuid != undefined){
+            const movimentadoRef = ref(database, 'controledeacessocomercial/movimentados/' + movimentadoUuid)
+
+            get(movimentadoRef).then((snapshot)=>{
+                const data = snapshot.val()
+
+                document.getElementById('gerar-movimentacao-foto-usuario').style.backgroundImage = `url(${data.foto})`
+                document.getElementById('gerar-movimentacao-nome-usuario').innerHTML = data.nome
+                document.getElementById('gerar-movimentacao-cpf').innerHTML = data.cpf
+                document.getElementById('gerar-movimentacao-modal-btn').dataset.movimentadoUuid = data.uuid
+
+                document.getElementById('black-background').style.display = 'block'
+                document.getElementById('gerar-movimentacao-modal').style.display = 'block'
+
+            })
+        }
+        
+    })
+
+    // Gera a movimentação
+    document.getElementById('gerar-movimentacao-modal-btn').addEventListener('click', async () => {
+        const movimentadoUuid = document.getElementById('gerar-movimentacao-modal-btn').dataset.movimentadoUuid;
+        const salaUuid = document.getElementById('gerar-movimentacao-destino-input').value;
+
+        if (!movimentadoUuid || !salaUuid) {
+            console.error("UUID do movimentado ou da sala não encontrado.");
+            return;
+        }
+
+        const movimentadoRef = ref(database, `controledeacessocomercial/movimentados/${movimentadoUuid}`);
+        const salaRef = ref(database, `controledeacessocomercial/salas/${salaUuid}`);
+
+        try {
+            const movimentadoSnapshot = await get(movimentadoRef);
+            const salaSnapshot = await get(salaRef);
+
+            if (!movimentadoSnapshot.exists() || !salaSnapshot.exists()) {
+                console.error("Dados do movimentado ou da sala não encontrados.");
+                return;
+            }
+
+            const movimentadoData = movimentadoSnapshot.val();
+            const salaData = salaSnapshot.val();
+
+            // Monta o objeto de movimentação
+            const movimentacao = {
+                foto: movimentadoData.foto || "",
+                nome: movimentadoData.nome || "",
+                usuario: movimentadoData.usuario || "",
+                cpf: movimentadoData.cpf || "",
+                nAndar: salaData.nAndar || "",
+                nSala: salaData.nSala || "",
+                nomeSala: salaData.nome || "",
+                horario: getFormattedDateTime() // Adiciona o horário formatado
+            };
+
+            // Referência para a coleção de movimentações
+            const movimentacaoRef = ref(database, 'controledeacessocomercial/movimentacoes');
+
+            // Salva a movimentação no Firebase
+            const novaMovimentacaoRef = push(movimentacaoRef); // Cria um ID único
+            await set(novaMovimentacaoRef, movimentacao);
+
+            document.getElementById('black-background').style.display = 'none'
+            document.getElementById('gerar-movimentacao-modal').style.display = 'none'
+            document.getElementById('gerar-movimentacao-destino-input').value = 'null'
+            Toastify({
+                text: "Movimentação salva com sucesso!",
+                duration: 3000,
+                newWindow: true,
+                close: true,
+                gravity: "bottom", // `top` or `bottom`
+                position: "right", // `left`, `center` or `right`
+                stopOnFocus: true, // Prevents dismissing of toast on hover
+                style: {
+                    background: 'green',
+                },
+                onClick: function(){} // Callback after click
+            }).showToast();
+            console.log("Movimentação salva com sucesso!", movimentacao);
+            
+        } catch (error) {
+            console.error("Erro ao gerar movimentação:", error);
+        }
+    });
 
