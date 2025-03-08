@@ -34,7 +34,7 @@
             <li id="painel-btn"><p class="btn-text" >Painel</p></li>
             <li id="salas-btn"><p class="btn-text"  >Salas</p></li>
             <li id="movimentado-btn"><p class="btn-text" >Movimentado</p></li>
-            <li><p class="btn-text">Movimentações</p></li>
+            <li id="movimentacao-btn"><p class="btn-text">Movimentações</p></li>
             <li><p class="btn-text">Usuários</p></li>
         </ul>
     </aside>
@@ -46,7 +46,7 @@
             <ul class="dados-faciais-painel-ul">
                 <li>
                     <div class="camera-div">
-                        <video id="video-painel" width="640" height="480" autoplay></video>
+                        <video id="video-painel" width="540" height="380" autoplay></video>
                     </div>
                 </li>
                 <li class="dados-faciais-painel-li" id="dados-faciais-painel-li">
@@ -152,7 +152,8 @@
                     <div class="cadastro-movimentado-foto" id="cadastro-movimentado-foto"></div>
                     
                     <ul class="btns-ul" id="btns-ul">
-                        <li><div class="foto-icon"></div></li>
+                        <li><label for="foto-movimentado-input"><div class="foto-icon" id="foto-icon-btn"></div></label></li>
+                        <input type="file" id="foto-movimentado-input" style="display: none;">
                         <li><div class="video-icon" id="video-foto-btn"></div></li>
                         <li><div class="block-icon" id="block-foto-btn"></div></li>
                     </ul>

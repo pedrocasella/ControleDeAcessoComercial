@@ -16,6 +16,45 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
   const app = initializeApp(firebaseConfig);
   const database = getDatabase(app);
 
+    function resizeImage(file, maxWidth, maxHeight, callback) {
+        var img = new Image();
+        var reader = new FileReader();
+
+        reader.onload = function(e) {
+            img.src = e.target.result;
+        };
+
+        img.onload = function() {
+            var canvas = document.createElement("canvas");
+            var width = img.width;
+            var height = img.height;
+
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width *= maxHeight / height;
+                    height = maxHeight;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+
+            var ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+
+            canvas.toBlob(function(blob) {
+                callback(blob);
+            }, file.type);
+        };
+
+        reader.readAsDataURL(file);
+    }
+
     // Função para obter a data e hora formatadas
     function getFormattedDateTime() {
         const now = new Date();
@@ -48,7 +87,7 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
     document.getElementById('cadastro-sala-area').style.display = 'none'
     document.getElementById('movimentado-area').style.display = 'none'
     document.getElementById('cadastro-movimentado-area').style.display = 'none'
-
+    document.getElementById('movimentacao-area').style.display = 'none'
   })
 
   document.getElementById('salas-btn').addEventListener('click', ()=>{
@@ -58,6 +97,9 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
     document.getElementById('cadastro-sala-area').style.display = 'none'
     document.getElementById('movimentado-area').style.display = 'none'
     document.getElementById('cadastro-movimentado-area').style.display = 'none'
+    document.getElementById('movimentacao-area').style.display = 'none'
+
+    exibirSalasCriadas()
 
   })
 
@@ -68,6 +110,20 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
     document.getElementById('cadastro-sala-area').style.display = 'none'
     document.getElementById('movimentado-area').style.display = 'block'
     document.getElementById('cadastro-movimentado-area').style.display = 'none'
+    document.getElementById('movimentacao-area').style.display = 'none'
+
+  })
+
+  document.getElementById('movimentacao-btn').addEventListener('click', ()=>{
+    document.getElementById('movimentacao-area').style.display = 'block'
+
+    document.getElementById('painel-area').style.display = 'none'
+    document.getElementById('salas-area').style.display = 'none'
+    document.getElementById('cadastro-sala-area').style.display = 'none'
+    document.getElementById('movimentado-area').style.display = 'none'
+    document.getElementById('cadastro-movimentado-area').style.display = 'none'
+
+    carregarMovimentacao()
 
   })
 
@@ -83,10 +139,10 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
         if(data){
 
             document.getElementById('list-salas-area').innerHTML = ''
-
+            document.getElementById('gerar-movimentacao-destino-input').innerHTML = '<option value="null">--Selecione um Destino--</option>'
             Object.values(data).forEach((sala)=>{
                 document.getElementById('list-salas-area').innerHTML += `
-                <ul class="sala-ul">
+                <ul class="sala-ul" id="sala-ul-${sala.uuid}">
                     <li><p class="nome-sala">${sala.nome}</p></li>
                     <li><p class="numero-sala">${sala.nSala}</p></li>
                     <li><p class="andar-sala">${sala.nAndar}</p></li>
@@ -115,41 +171,69 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
   //Fechar Criação de Sala
   document.getElementById('cancelar-cadastrar-sala-btn').addEventListener('click', ()=>{
         document.getElementById('salas-area').style.display = 'block'
-    document.getElementById('cadastro-sala-area').style.display = 'none'
+        document.getElementById('cadastro-sala-area').style.display = 'none'
   })
 
-document.getElementById('cadastrar-sala-btn').addEventListener('click', async () => {
-    const nomeSala = document.getElementById('cadastro-sala-nome-input').value.trim();
-    const nSala = document.getElementById('cadastro-sala-nSala-input').value;
-    const nAndar = document.getElementById('cadastro-sala-andar-input').value;
+    //Cria a Sala
+    document.getElementById('cadastrar-sala-btn').addEventListener('click', async () => {
+        const nomeSala = document.getElementById('cadastro-sala-nome-input').value.trim();
+        const nSala = document.getElementById('cadastro-sala-nSala-input').value;
+        const nAndar = document.getElementById('cadastro-sala-andar-input').value;
 
-    if (!nomeSala) {
-        exibirToast("O nome da sala é obrigatório!", "red");
-        return;
-    }
-
-    const salasRef = ref(database, 'controledeacessocomercial/salas/');
-
-    try {
-        const snapshot = await get(salasRef);
-        const data = snapshot.val() || {};
-
-        const salaJaExiste = Object.values(data).some(sala => sala.nome === nomeSala);
-
-        if (salaJaExiste) {
-            exibirToast("Esse nome de sala já foi utilizado. Escolha um nome diferente.", "red");
+        if (!nomeSala) {
+            exibirToast("O nome da sala é obrigatório!", "red");
             return;
         }
 
-        await criarSala(salasRef, nomeSala, nSala, nAndar);
-        exibirToast("Sala cadastrada com sucesso!", "green");
-        limparCampos();
+        const salasRef = ref(database, 'controledeacessocomercial/salas/');
 
-    } catch (error) {
-        console.error("Erro ao cadastrar sala:", error);
-        exibirToast("Erro ao cadastrar sala. Tente novamente!", "red");
-    }
-});
+        try {
+            const snapshot = await get(salasRef);
+            const data = snapshot.val() || {};
+
+            const salaJaExiste = Object.values(data).some(sala => sala.nome === nomeSala);
+
+            if (salaJaExiste) {
+                exibirToast("Esse nome de sala já foi utilizado. Escolha um nome diferente.", "red");
+                return;
+            }
+
+            await criarSala(salasRef, nomeSala, nSala, nAndar);
+            exibirToast("Sala cadastrada com sucesso!", "green");
+            exibirSalasCriadas()
+            document.getElementById('salas-area').style.display = 'block'
+            document.getElementById('cadastro-sala-area').style.display = 'none'
+            limparCampos();
+            
+
+        } catch (error) {
+            console.error("Erro ao cadastrar sala:", error);
+            exibirToast("Erro ao cadastrar sala. Tente novamente!", "red");
+        }
+    });
+
+    //Editar ou Excluir Sala
+    document.getElementById('list-salas-area').addEventListener('click', (e)=>{
+        const id = e.target.id
+        const salaUuid = e.target.dataset.salaUuid
+        if(id == 'excluir-sala-btn' && salaUuid != undefined){
+            const salasRef = ref(database, 'controledeacessocomercial/salas/' + salaUuid);
+            
+            remove(salasRef).then(()=>{
+                Toastify({
+                    text: 'Sala removida com sucesso!',
+                    duration: 3000,
+                    newWindow: true,
+                    close: true,
+                    gravity: "bottom",
+                    position: "right",
+                    stopOnFocus: true,
+                    style: { background: 'green' }
+                }).showToast();
+                document.getElementById(`sala-ul-${salaUuid}`).remove()
+            })
+        }
+    })
 
 async function criarSala(salasRef, nomeSala, nSala, nAndar) {
     const pushSalaRef = push(salasRef);
@@ -384,6 +468,7 @@ loadFaceAPI();
             const data = snapshot.val()
 
             if(data){
+                document.getElementById('list-movimentado-area').innerHTML = ''
                 Object.values(data).forEach((movimentado)=>{
                     document.getElementById('list-movimentado-area').innerHTML += `
                                     <ul class="movimentado-ul" id="movimentado-ul-${movimentado.uuid}" data-movimentado-uuid="${movimentado.uuid}">
@@ -419,7 +504,7 @@ loadFaceAPI();
         const id = e.target.id
         const movimentadoId = e.target.dataset.movimentadoUuid
         if(id == "excluir-movimentado-btn" && movimentadoId != undefined){
-            const movimentadoRef = ref(database, 'controledeacessocomercial/movimentados' + movimentadoId)
+            const movimentadoRef = ref(database, 'controledeacessocomercial/movimentados/' + movimentadoId)
             remove(movimentadoRef).then(()=>{
                 console.log(movimentadoId)
                 document.getElementById(`movimentado-ul-${movimentadoId}`).remove()
@@ -461,6 +546,27 @@ function generateUUID() {
         return v.toString(16);
     });
 }
+
+    //Possibilita carregar foto através de input para o movimentado
+    document.getElementById("foto-movimentado-input").addEventListener("change", function(e) {
+        var file = e.target.files[0];
+    
+        if (file) {
+            resizeImage(file, 800, 800, function(resizedBlob) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                    var base64String = reader.result;
+                    document.getElementById('cadastro-movimentado-foto').style.backgroundImage = 'url(' + base64String + ')'
+                };
+                reader.readAsDataURL(resizedBlob);
+            });
+        }
+    });
+
+        //Limpa a foto do input
+        document.getElementById('block-foto-btn').addEventListener('click', ()=>{
+            document.getElementById('cadastro-movimentado-foto').style.backgroundImage = 'url(./../img/profile.png)'
+        })
 
 async function captureAndSavemovimentado() {
     if (!modelLoaded) {
@@ -732,6 +838,31 @@ async function startFaceDetection() {
     }
 }
 
+    //Gerar Movimentação em tempo real
+    document.getElementById('dados-faciais-painel-li').addEventListener('click', (e)=>{
+        const id = e.target.id
+        const movimentadoUuid = e.target.dataset.movimentadoUuid
+        
+
+        if(id == 'gerar-movimentacao-painel-btn' && movimentadoUuid != undefined){
+            const movimentadoRef = ref(database, 'controledeacessocomercial/movimentados/' + movimentadoUuid)
+            get(movimentadoRef).then((snapshot)=>{
+                const data = snapshot.val()
+    
+                document.getElementById('gerar-movimentacao-foto-usuario').style.backgroundImage = `url(${data.foto})`
+                document.getElementById('gerar-movimentacao-nome-usuario').innerHTML = data.nome
+                document.getElementById('gerar-movimentacao-cpf').innerHTML = data.cpf
+                document.getElementById('gerar-movimentacao-modal-btn').dataset.movimentadoUuid = data.uuid
+    
+                document.getElementById('black-background').style.display = 'block'
+                document.getElementById('gerar-movimentacao-modal').style.display = 'block'
+    
+            })
+        }
+        
+
+    })
+
 // Carregar os dados dos movimentados uma vez, antes de iniciar a detecção
 loadMovimentadosData().then(() => {
     startFaceDetection();
@@ -746,6 +877,36 @@ document.getElementById('select-camera-painel').addEventListener('change', ()=>{
 })
 
 //Gerar Movimentação
+    //Carrega a movimentação existente
+    function carregarMovimentacao(){
+        const movimentacaoRef = ref(database, 'controledeacessocomercial/movimentacoes');
+
+        get(movimentacaoRef).then((snapshot)=>{
+            const data = snapshot.val()
+
+            if(data){
+                console.log(data)
+                document.getElementById('list-movimentacao-area').innerHTML = ''
+                Object.values(data).forEach((movimentacao)=>{
+                    document.getElementById('list-movimentacao-area').innerHTML += `
+                        <ul class="movimentacao-ul" id="movimentacao-ul-${movimentacao.uuid}">
+                            <li><div class="foto-movimentado-movimentacao" style="background-image: url(${movimentacao.foto})"></div></li>
+                            <li><p class="title">Nome</p><p class="nome-movimentacao">${movimentacao.nome}</p></li>
+                            <li><p class="title">Destino:</p><p class="destino-movimentacao">${movimentacao.nomeSala}</p></li>
+                            <li><p class="title">Número:</p><p class="destino-movimentacao">${movimentacao.nSala}</p></li>
+                            <li><p class="title">Andar:</p><p class="destino-movimentacao">${movimentacao.nAndar}</p></li>
+                            <li><p class="title">Horário</p><p class="horario-movimentacao">${movimentacao.horario}</p></li>
+                            <li><div class="remover-movimentacao-btn" title="Remover Movimentação" id="remover-movimentacao-btn" data-movimentacao-uuid="${movimentacao.uuid}"></div></li>
+                        </ul><br>
+
+                    `
+                })
+            }
+        })
+    }
+
+    carregarMovimentacao()
+
     //Abrir Modal de Movimentação
     document.getElementById('list-movimentado-area').addEventListener('click', (e)=>{
         const id = e.target.id
@@ -836,4 +997,30 @@ document.getElementById('select-camera-painel').addEventListener('change', ()=>{
             console.error("Erro ao gerar movimentação:", error);
         }
     });
+
+        //Exclui a movimentação
+        document.getElementById('list-movimentacao-area').addEventListener('click', (e)=>{
+            const id = e.target.id
+            const movimentacaoUuid = e.target.dataset.movimentacaoUuid
+
+            if(id == 'remover-movimentacao-btn' && movimentacaoUuid != undefined){
+                const movimentacaoRef = ref(database, 'controledeacessocomercial/movimentacoes/' + movimentacaoUuid);
+                remove(movimentacaoRef).then(()=>{
+                    Toastify({
+                        text: "Movimentação excluída com sucesso!",
+                        duration: 3000,
+                        newWindow: true,
+                        close: true,
+                        gravity: "bottom", // `top` or `bottom`
+                        position: "right", // `left`, `center` or `right`
+                        stopOnFocus: true, // Prevents dismissing of toast on hover
+                        style: {
+                            background: 'green',
+                        },
+                        onClick: function(){} // Callback after click
+                    }).showToast();
+                    document.getElementById(`movimentacao-ul-${movimentacaoUuid}`).remove()
+                })
+            }
+        })
 

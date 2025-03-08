@@ -142,7 +142,7 @@ body{
     /* Painel Principal */
     .painel-area{
         padding: 2rem;
-        display: block;
+        display: none;
     }
     
 
@@ -155,7 +155,7 @@ body{
     .painel-area .dados-faciais-painel-li .dados-faciais-aviso{
         width: 300px;
         height: 300px;
-        transform: translateY(-100px);
+        transform: translateY(-80px);
         background-position: center;
         background-size: cover;
         background-repeat: no-repeat;
@@ -165,7 +165,7 @@ body{
     .painel-area .dados-faciais-painel-ul{
         list-style: none;
         display: inline-flex;
-        margin-top: 2rem;
+        margin-top: 1rem;
     }
 
 
@@ -218,8 +218,8 @@ body{
     }
 
     .painel-area .camera-div{
-        width: 500px;
-        height: 400px;
+        width: 450px;
+        height: 350px;
         border-radius: 4px;
     }
 
@@ -236,7 +236,7 @@ body{
 
     .painel-area .autorizacao-div-area{
         width: 100%;
-        margin-top: 1rem;
+        margin-top: 0rem;
     }
 
     .painel-area .autorizacao-div-area .auth-message{
@@ -246,6 +246,7 @@ body{
         color: #fff;
         font-weight: bolder;
         display: none;
+        margin-top: -1rem;
         user-select: none;
         padding: 1rem 2rem 1rem 2rem;
         background-color: #007c01;
@@ -364,7 +365,7 @@ body{
         width: 30px;
         height: 30px;
         border-radius: 50%;
-        background-color: red;
+        background-color: rgb(255, 47, 47);
         background-position: center;
         background-size: 50%;
         cursor: pointer;
@@ -551,7 +552,8 @@ body{
         list-style: none;
         display: inline-flex;
         border: solid #323232 1px;
-        border-radius: 14px;
+        border-radius: 4px;
+        margin-bottom: .5rem;
         -webkit-box-shadow: 5px 5px 15px 5px rgba(0,0,0,0.07); 
         box-shadow: 5px 5px 15px 5px rgba(0,0,0,0.07);  
     }
@@ -854,7 +856,7 @@ body{
     /* Movimentação Area */
     .movimentacao-area{
         padding: 2rem;
-        display: none;
+        display: block;
     }
 
     .movimentacao-area .movimentacao-filtros-ul{
@@ -878,3 +880,59 @@ body{
         background-repeat: no-repeat;
         background-image: url(./../img/search.webp);
     }
+
+    .movimentacao-area .list-movimentacao-area{
+        margin-top: 2rem;
+        
+    }
+
+    .movimentacao-area .list-movimentacao-area .movimentacao-ul{
+        list-style: none;
+        display: inline-flex;
+        padding: 1rem;
+        border: solid #323232 1px;
+        font-size: 10pt;
+        border-radius: 4px;
+        margin-bottom: .5rem;
+        -webkit-box-shadow: 5px 5px 15px 5px rgba(0,0,0,0.06); 
+        box-shadow: 5px 5px 15px 5px rgba(0,0,0,0.06);
+    }
+
+    .movimentacao-area .list-movimentacao-area .movimentacao-ul li{
+        margin-right: 1rem;
+    }
+
+    .movimentacao-area .list-movimentacao-area .movimentacao-ul .foto-movimentado-movimentacao{
+        width: 40px;
+        height: 50px;
+        background-color: #323232;
+        border-radius: 4px;
+        background-position: center;
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+    .movimentacao-area .list-movimentacao-area .movimentacao-ul .title{
+        font-weight: bolder;
+        font-size: 8pt;
+        margin-bottom: .3rem;
+    }
+
+    .movimentacao-area .list-movimentacao-area .movimentacao-ul .nome-movimentacao{
+        width: 200px;
+    }
+
+    .movimentacao-area .list-movimentacao-area .movimentacao-ul .remover-movimentacao-btn{
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: red;
+        background-position: center;
+        background-size: 50%;
+        cursor: pointer;
+        background-repeat: no-repeat;
+        background-image: url(./../img/delete.png);
+        margin-top: .5rem;
+    }
+
+    /* ----------------- */
