@@ -887,16 +887,17 @@ document.getElementById('select-camera-painel').addEventListener('change', ()=>{
             if(data){
                 console.log(data)
                 document.getElementById('list-movimentacao-area').innerHTML = ''
-                Object.values(data).forEach((movimentacao)=>{
+                Object.keys(data).forEach((movimentacao)=>{
+                    
                     document.getElementById('list-movimentacao-area').innerHTML += `
-                        <ul class="movimentacao-ul" id="movimentacao-ul-${movimentacao.uuid}">
-                            <li><div class="foto-movimentado-movimentacao" style="background-image: url(${movimentacao.foto})"></div></li>
-                            <li><p class="title">Nome</p><p class="nome-movimentacao">${movimentacao.nome}</p></li>
-                            <li><p class="title">Destino:</p><p class="destino-movimentacao">${movimentacao.nomeSala}</p></li>
-                            <li><p class="title">Número:</p><p class="destino-movimentacao">${movimentacao.nSala}</p></li>
-                            <li><p class="title">Andar:</p><p class="destino-movimentacao">${movimentacao.nAndar}</p></li>
-                            <li><p class="title">Horário</p><p class="horario-movimentacao">${movimentacao.horario}</p></li>
-                            <li><div class="remover-movimentacao-btn" title="Remover Movimentação" id="remover-movimentacao-btn" data-movimentacao-uuid="${movimentacao.uuid}"></div></li>
+                        <ul class="movimentacao-ul" id="movimentacao-ul-${movimentacao}">
+                            <li><div class="foto-movimentado-movimentacao" style="background-image: url(${data[movimentacao].foto})"></div></li>
+                            <li><p class="title">Nome</p><p class="nome-movimentacao">${data[movimentacao].nome}</p></li>
+                            <li><p class="title">Destino:</p><p class="destino-movimentacao">${data[movimentacao].nomeSala}</p></li>
+                            <li><p class="title">Número:</p><p class="destino-movimentacao">${data[movimentacao].nSala}</p></li>
+                            <li><p class="title">Andar:</p><p class="destino-movimentacao">${data[movimentacao].nAndar}</p></li>
+                            <li><p class="title">Horário</p><p class="horario-movimentacao">${data[movimentacao].horario}</p></li>
+                            <li><div class="remover-movimentacao-btn" title="Remover Movimentação" id="remover-movimentacao-btn" data-movimentacao-uuid="${movimentacao}"></div></li>
                         </ul><br>
 
                     `
@@ -1004,8 +1005,9 @@ document.getElementById('select-camera-painel').addEventListener('change', ()=>{
             const movimentacaoUuid = e.target.dataset.movimentacaoUuid
 
             if(id == 'remover-movimentacao-btn' && movimentacaoUuid != undefined){
-                const movimentacaoRef = ref(database, 'controledeacessocomercial/movimentacoes/' + movimentacaoUuid);
-                remove(movimentacaoRef).then(()=>{
+                const movimentacaoRef = ref(database, 'controledeacessocomercial/movimentacoes/' + movimentacaoUuid + '/');
+                remove(movimentacaoRef).then((err)=>{
+                    console.log(err)
                     Toastify({
                         text: "Movimentação excluída com sucesso!",
                         duration: 3000,

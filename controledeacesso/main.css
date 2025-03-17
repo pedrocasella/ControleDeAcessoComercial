@@ -142,7 +142,7 @@ body{
     /* Painel Principal */
     .painel-area{
         padding: 2rem;
-        display: none;
+        display: block;
     }
     
 
@@ -856,7 +856,7 @@ body{
     /* Movimentação Area */
     .movimentacao-area{
         padding: 2rem;
-        display: block;
+        display: none;
     }
 
     .movimentacao-area .movimentacao-filtros-ul{
