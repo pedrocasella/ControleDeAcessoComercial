@@ -316,12 +316,14 @@ body{
     .salas-area .list-salas-area{
         margin-top: 2rem;
         display: block;
+        height: 430px;
+        overflow-y: scroll;
     }
 
     .salas-area .list-salas-area .sala-ul{
         list-style: none;
         display: inline-flex;
-        width: 350px;
+        width: 400px;
         border-radius: 12px;
         border: solid #323232 1px;
         margin-top: 1rem;
@@ -334,7 +336,7 @@ body{
     }
 
     .salas-area .list-salas-area .nome-sala{
-        width: 80px;
+        width: 100px;
         overflow: hidden;
         font-weight: bolder;
         color: #323232;
@@ -546,6 +548,8 @@ body{
     .movimentado-area .list-movimentado-area{
         margin-top: 2rem;
         display: block;
+        overflow-y: scroll;
+        height: 400px;
     }
 
     .movimentado-area .movimentado-ul{
@@ -883,7 +887,8 @@ body{
 
     .movimentacao-area .list-movimentacao-area{
         margin-top: 2rem;
-        
+        height: 400px;
+        overflow-y: scroll;
     }
 
     .movimentacao-area .list-movimentacao-area .movimentacao-ul{
@@ -920,6 +925,10 @@ body{
 
     .movimentacao-area .list-movimentacao-area .movimentacao-ul .nome-movimentacao{
         width: 200px;
+    }
+
+    .movimentacao-area .list-movimentacao-area .movimentacao-ul .destino-movimentacao{
+        width: 80px;
     }
 
     .movimentacao-area .list-movimentacao-area .movimentacao-ul .remover-movimentacao-btn{
