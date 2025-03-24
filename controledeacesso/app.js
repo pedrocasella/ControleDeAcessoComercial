@@ -151,7 +151,7 @@ import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstati
                 </ul><br>
             `
 
-            document.getElementById('gerar-movimentacao-destino-input').innerHTML += `<option value="${sala.uuid}">${sala.nome}</option>`
+            document.getElementById('gerar-movimentacao-destino-input').innerHTML += `<option value="${sala.uuid}">${sala.nSala} - ${sala.nome}</option>`
             })
         }
         
@@ -460,50 +460,117 @@ loadFaceAPI();
 
 // Capturar a foto e extrair os descritores faciais a partir de uma imagem Base64
 
-    //Carregar Movimentados já existentes
-    function exibirMovimentados(){
-        const movimentadosRef = ref(database, 'controledeacessocomercial/movimentados')
+    let currentPage = 1; // Variável global para rastrear a página atual
+    let searchTerm = ""; // Variável global para armazenar o termo de pesquisa
 
-        get(movimentadosRef).then((snapshot)=>{
-            const data = snapshot.val()
+    // Carregar Movimentados já existentes com paginação e pesquisa
+    function exibirMovimentados() {
+        document.getElementById('loading-lista-movimentados').style.display = 'flex'
+        document.getElementById('list-movimentado-area').innerHTML = '';
+        const movimentadosRef = ref(database, 'controledeacessocomercial/movimentados');
 
-            if(data){
-                document.getElementById('list-movimentado-area').innerHTML = ''
-                Object.values(data).forEach((movimentado)=>{
-                    document.getElementById('list-movimentado-area').innerHTML += `
-                                    <ul class="movimentado-ul" id="movimentado-ul-${movimentado.uuid}" data-movimentado-uuid="${movimentado.uuid}">
-                    <li>
-                        <div class="movimentado-foto-list" style="background-image: url(${movimentado.foto})"></div>
-                    </li>
-                    <li>
-                        <p class="nome-movimentado">${movimentado.nome}</p>
-                        <p class="cpf-movimentado">${movimentado.cpf}</p>
-                    </li>
-                    <li>
-                        <div class="gerar-movimentacao-list-btn" id="gerar-movimentacao-list-btn" data-movimentado-uuid="${movimentado.uuid}">Gerar Movimentação</div>
-                    </li>
-                    <li>
-                        <ul class="btn-ul">
-                            <li><div class="editar-movimentado-btn" id="editar-movimentado-btn" data-movimentado-uuid="${movimentado.uuid}"></div></li>
-                            <li><div class="excluir-movimentado-btn" id="excluir-movimentado-btn" data-movimentado-uuid="${movimentado.uuid}"></div></li>
-                            <li><div class="historico-movimentado-btn" id="historico-movimentado-btn" data-movimentado-uuid="${movimentado.uuid}"></div></li>
-                        </ul>
-                    </li>
-                </ul><br>
+        get(movimentadosRef).then((snapshot) => {
+            const data = snapshot.val();
+
+            if (data) {
+                const movimentados = Object.values(data);
+                const itemsPerPage = 20; // Número de usuários por página
+
+                // Função para renderizar a página atual
+                function renderPage(page, filteredData) {
+                    document.getElementById('loading-lista-movimentados').style.display = 'flex'
+                    document.getElementById('list-movimentado-area').innerHTML = '';
+                    currentPage = page; // Atualiza a página atual
+                    const startIndex = (page - 1) * itemsPerPage;
+                    const endIndex = startIndex + itemsPerPage;
+                    const paginatedData = filteredData.slice(startIndex, endIndex);
+
                     
-                    `
-                })
+
+                    paginatedData.forEach((movimentado) => {
+                        document.getElementById('list-movimentado-area').innerHTML += `
+                            <ul class="movimentado-ul" id="movimentado-ul-${movimentado.uuid}" data-movimentado-uuid="${movimentado.uuid}">
+                                <li>
+                                    <div class="movimentado-foto-list" style="background-image: url(${movimentado.foto})"></div>
+                                </li>
+                                <li>
+                                    <p class="nome-movimentado">${movimentado.nome}</p>
+                                    <p class="cpf-movimentado">${movimentado.cpf}</p>
+                                    <p class="celular-movimentado">${movimentado.celular || ''}</p>
+                                </li>
+                                <li>
+                                    <div class="gerar-movimentacao-list-btn" id="gerar-movimentacao-list-btn" data-movimentado-uuid="${movimentado.uuid}">Gerar Movimentação</div>
+                                </li>
+                                <li>
+                                    <ul class="btn-ul">
+                                        <li><div class="editar-movimentado-btn" id="editar-movimentado-btn" data-movimentado-uuid="${movimentado.uuid}"></div></li>
+                                        <li><div class="excluir-movimentado-btn" id="excluir-movimentado-btn" data-movimentado-uuid="${movimentado.uuid}"></div></li>
+                                        <li><div class="historico-movimentado-btn" id="historico-movimentado-btn" data-movimentado-uuid="${movimentado.uuid}"></div></li>
+                                    </ul>
+                                </li>
+                            </ul><br>
+                        `;
+                    });
+                    document.getElementById('loading-lista-movimentados').style.display = 'none'
+
+                    renderPagination(filteredData);
+                }
+
+                // Função para criar os botões de paginação
+                function renderPagination(filteredData) {
+                    const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+                    const paginationArea = document.getElementById('pagination-area');
+                    paginationArea.innerHTML = '';
+
+                    for (let i = 1; i <= totalPages; i++) {
+                        const button = document.createElement('button');
+                        button.textContent = i;
+                        button.className = i === currentPage ? 'active' : '';
+                        button.addEventListener('click', () => {
+                            renderPage(i, filteredData); // Atualiza para a página clicada
+                        });
+                        paginationArea.appendChild(button);
+                    }
+                }
+
+                // Função para aplicar o filtro de pesquisa
+                function applyFilter() {
+                    const filteredData = movimentados.filter((movimentado) => {
+                        return (
+                            movimentado.nome.toLowerCase().includes(searchTerm) ||
+                            movimentado.cpf.includes(searchTerm) ||
+                            (movimentado.celular && movimentado.celular.includes(searchTerm))
+                        );
+                    });
+
+                    // Reinicia a paginação para a página 1 ao pesquisar
+                    renderPage(1, filteredData);
+                }
+
+                // Listener para o input de pesquisa
+                const searchInput = document.getElementById('procurar-movimentado-input');
+                searchInput.addEventListener('input', (e) => {
+                    searchTerm = e.target.value.toLowerCase();
+                    applyFilter();
+                });
+
+                // Renderizar a página armazenada ou inicial
+                applyFilter();
             }
-        })
+        });
     }
 
-    exibirMovimentados()
+    // Exemplo de uso inicial
+    exibirMovimentados();
+
+
 
     //Editar ou Excluir o Movimentado
     document.getElementById('list-movimentado-area').addEventListener('click', (e)=>{
         const id = e.target.id
         const movimentadoId = e.target.dataset.movimentadoUuid
         if(id == "excluir-movimentado-btn" && movimentadoId != undefined){
+            document.getElementById('geral-loader').style.display = 'block'
             const movimentadoRef = ref(database, 'controledeacessocomercial/movimentados/' + movimentadoId)
             remove(movimentadoRef).then(()=>{
                 console.log(movimentadoId)
@@ -522,6 +589,7 @@ loadFaceAPI();
                     onClick: function(){} // Callback after click
                 }).showToast();
                 exibirMovimentados()
+                document.getElementById('geral-loader').style.display = 'none'
             })
         }
     })
@@ -552,7 +620,7 @@ function generateUUID() {
         var file = e.target.files[0];
     
         if (file) {
-            resizeImage(file, 800, 800, function(resizedBlob) {
+            resizeImage(file, 500, 500, function(resizedBlob) {
                 var reader = new FileReader();
                 reader.onload = function() {
                     var base64String = reader.result;
@@ -569,6 +637,7 @@ function generateUUID() {
         })
 
 async function captureAndSavemovimentado() {
+    document.getElementById('white-background').style.display = 'block'
     if (!modelLoaded) {
         console.warn("Modelo ainda não carregado. Aguardando...");
         await loadFaceAPI(); // Espera o modelo carregar se não estiver carregado
@@ -585,12 +654,13 @@ async function captureAndSavemovimentado() {
     // Validação: Se nome, nome de usuário ou CPF estiverem vazios, exibir Toastify e interromper
     if (!nomeCompleto || !nomeUsuario || !cpf) {
         Toastify({
-            text: "Preencha todos os campos obrigatórios: Nome Completo, Nome de Usuário e CPF.",
+            text: "Preencha todos os campos obrigatórios: Nome Completo, Local de Destino e CPF.",
             duration: 3000,
             gravity: "top",
             position: "center",
             backgroundColor: "red",
         }).showToast();
+        document.getElementById('white-background').style.display = 'none'
         return;
     }
 
@@ -615,7 +685,7 @@ async function captureAndSavemovimentado() {
         // Verificar duplicidade
         for (let key in existingMovimentados) {
             const movimentado = existingMovimentados[key];
-            if (movimentado.nome === nomeCompleto && movimentado.usuario === nomeUsuario && movimentado.cpf === cpf) {
+            if (movimentado.nome === nomeCompleto &&  movimentado.cpf === cpf) {
                 Toastify({
                     text: "Já existe um movimentado com esses dados obrigatórios.",
                     duration: 3000,
@@ -623,6 +693,7 @@ async function captureAndSavemovimentado() {
                     position: "center",
                     backgroundColor: "red",
                 }).showToast();
+                document.getElementById('white-background').style.display = 'none'
                 return;
             }
         }
@@ -697,6 +768,7 @@ async function captureAndSavemovimentado() {
             input.value = ''
         })
         exibirMovimentados()
+        document.getElementById('white-background').style.display = 'none'
 
     } catch (error) {
         console.error("Erro ao capturar e salvar movimentação:", error);
@@ -707,6 +779,7 @@ async function captureAndSavemovimentado() {
             position: "center",
             backgroundColor: "red",
         }).showToast();
+        document.getElementById('white-background').style.display = 'none'
     }
 }
 
