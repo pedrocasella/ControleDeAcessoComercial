@@ -302,60 +302,24 @@ async function loadFaceAPI() {
     console.log('Modelo carregado com sucesso');
 }
 
+let rostoDetectado = false;
+
 async function detectFace() {
-    if (!videoElement.videoWidth || !videoElement.videoHeight) {
-        console.warn("Dimensões do vídeo ainda não disponíveis. Tentando novamente...");
-        setTimeout(detectFace, 500);
-        return;
+    const detections = await faceapi.detectSingleFace(videoElement, new faceapi.TinyFaceDetectorOptions());
+
+    if (detections) {
+        rostoDetectado = true;
+        console.log("Rosto detectado");
+        // você pode até desenhar a caixa do rosto aqui, se quiser
+    } else {
+        rostoDetectado = false;
+        console.log("Nenhum rosto detectado");
     }
 
-    // Ajusta as dimensões do canvas de acordo com o vídeo
-    const displaySize = { width: videoElement.videoWidth, height: videoElement.videoHeight };
-    faceapi.matchDimensions(faceCanvas, displaySize);
-
-    faceDetectionInterval = setInterval(async () => {
-        const detections = await faceapi.detectAllFaces(videoElement, new faceapi.TinyFaceDetectorOptions());
-
-        // Limpa o canvas a cada nova detecção
-        faceContext.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
-
-        if (detections.length > 0) {
-            detections.forEach(detection => {
-                const { x, y, width, height } = detection.box;
-
-                // Desenha um retângulo azul em volta do rosto detectado
-                faceContext.strokeStyle = "blue";
-                faceContext.lineWidth = 2;
-                faceContext.strokeRect(x, y, width, height);
-
-                // Adiciona o nome abaixo do quadrado (retângulo)
-                const nomeUsuario = document.getElementById("nome-usuario-cadastro-movimentado-input").value.trim();
-                const nomeCompleto = document.getElementById("nome-completo-cadastro-movimentado-input").value.trim();
-                const nomeExibido = nomeUsuario || nomeCompleto || "Nome de Usuário";
-
-                // Remove o nome anterior, se houver
-                const existingNameDiv = document.querySelector('.name-tag');
-                if (existingNameDiv) {
-                    existingNameDiv.remove();
-                }
-
-                // Cria o novo nome
-                const nameDiv = document.createElement("div");
-                nameDiv.classList.add("name-tag"); // Adiciona uma classe para facilitar a remoção posterior
-                nameDiv.style.position = "absolute";
-                nameDiv.style.top = `${y + height + 5}px`; // Coloca o nome logo abaixo do quadrado
-                nameDiv.style.left = `${x}px`;
-                nameDiv.style.backgroundColor = "rgba(0, 0, 255, 0.6)";
-                nameDiv.style.color = "white";
-                nameDiv.style.padding = "2px 5px";
-                nameDiv.style.borderRadius = "5px";
-                nameDiv.textContent = nomeExibido;
-
-                cameraContainer.appendChild(nameDiv);
-            });
-        }
-    }, 100); // Detecta a cada 100ms
+    // Continuar verificando a cada X milissegundos
+    faceDetectionInterval = setTimeout(detectFace, 500);
 }
+
 
 async function listCameras() {
     try {
@@ -427,6 +391,23 @@ function stopCamera() {
 }
 
 function capturePhoto() {
+    if (!rostoDetectado) {
+        Toastify({
+            text: "Nenhum rosto detectado. Por favor, posicione o rosto na frente da câmera.",
+            duration: 3000,
+            newWindow: true,
+            close: true,
+            gravity: "bottom", // `top` or `bottom`
+            position: "right", // `left`, `center` or `right`
+            stopOnFocus: true, // Prevents dismissing of toast on hover
+            style: {
+                background: 'red',
+            },
+            onClick: function(){} // Callback after click
+        }).showToast();
+        return;
+    }
+
     const canvas = document.createElement("canvas");
     canvas.width = videoElement.videoWidth;
     canvas.height = videoElement.videoHeight;
@@ -441,6 +422,7 @@ function capturePhoto() {
 
     stopCamera();
 }
+
 
 openCameraBtn.addEventListener("click", () => {
     startCamera(cameraSelect.value);
@@ -620,7 +602,7 @@ function generateUUID() {
         var file = e.target.files[0];
     
         if (file) {
-            resizeImage(file, 500, 500, function(resizedBlob) {
+            resizeImage(file, 80, 80, function(resizedBlob) {
                 var reader = new FileReader();
                 reader.onload = function() {
                     var base64String = reader.result;
@@ -1099,3 +1081,67 @@ document.getElementById('select-camera-painel').addEventListener('change', ()=>{
             }
         })
 
+        // function resizeBase64Image(base64, maxWidth, maxHeight, callback) {
+        //     var img = new Image();
+        //     img.onload = function () {
+        //         var canvas = document.createElement("canvas");
+        //         var width = img.width;
+        //         var height = img.height;
+        
+        //         if (width > height) {
+        //             if (width > maxWidth) {
+        //                 height *= maxWidth / width;
+        //                 width = maxWidth;
+        //             }
+        //         } else {
+        //             if (height > maxHeight) {
+        //                 width *= maxHeight / height;
+        //                 height = maxHeight;
+        //             }
+        //         }
+        
+        //         canvas.width = width;
+        //         canvas.height = height;
+        
+        //         var ctx = canvas.getContext("2d");
+        //         ctx.drawImage(img, 0, 0, width, height);
+        
+        //         const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7); // ajusta a qualidade se quiser
+        //         callback(compressedBase64);
+        //     };
+        //     img.src = base64;
+        // }
+        
+        // async function comprimirFotosMovimentados() {
+        //     const caminho = ref(database, 'controledeacessocomercial/movimentados');
+            
+        //     try {
+        //         const snapshot = await get(caminho);
+        
+        //         if (snapshot.exists()) {
+        //             const movimentados = snapshot.val();
+        
+        //             for (const chave in movimentados) {
+        //                 const entrada = movimentados[chave];
+                        
+        //                 if (entrada.foto && entrada.foto.startsWith("data:image")) {
+        //                     console.log("Comprimindo imagem de:", chave);
+        
+        //                     resizeBase64Image(entrada.foto, 300, 300, async (base64Comprimido) => {
+        //                         const atualizacao = {};
+        //                         atualizacao[`controledeacessocomercial/movimentados/${chave}/foto`] = base64Comprimido;
+        
+        //                         await update(ref(database), atualizacao);
+        //                         console.log(`Foto atualizada para ${chave}`);
+        //                     });
+        //                 }
+        //             }
+        //         } else {
+        //             console.log("Nenhuma entrada encontrada.");
+        //         }
+        //     } catch (error) {
+        //         console.error("Erro ao comprimir imagens:", error);
+        //     }
+        // }
+
+        // comprimirFotosMovimentados()
