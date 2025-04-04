@@ -1,13 +1,20 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js";
 import { get, getDatabase, ref, push, set, remove, update, child } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-database.js";
-import { getFirestore, collection, setDoc, doc, addDoc, serverTimestamp  } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js";
+import { getStorage, ref as storageRef, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-storage.js";
+import { getFirestore, doc, getDoc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore.js"; // Importações do Firestore
 
-import { firebaseConfig } from './../firebaseConfig.js';
+  const firebaseConfig = {
+    apiKey: "AIzaSyCi4Wp3EbvhLRs335YLtKDvTvErbW6w42A",
+    authDomain: "controledeacessocomercia-b0fb2.firebaseapp.com",
+    projectId: "controledeacessocomercia-b0fb2",
+    storageBucket: "controledeacessocomercia-b0fb2.firebasestorage.app",
+    messagingSenderId: "120928750296",
+    appId: "1:120928750296:web:502ef46c7c4ee12d4c25ad"
+  };
 
-const app = initializeApp(firebaseConfig);
-const database = getDatabase(app);
-const firestore = getFirestore(app);
 
+  const app = initializeApp(firebaseConfig);
+  const database = getDatabase(app);
 
     function resizeImage(file, maxWidth, maxHeight, callback) {
         var img = new Image();
@@ -451,44 +458,40 @@ cameraSelect.addEventListener("change", () => {
 listCameras();
 loadFaceAPI();
 
-    // Capturar a foto e extrair os descritores faciais a partir de uma imagem Base64
+// Capturar a foto e extrair os descritores faciais a partir de uma imagem Base64
 
     let currentPage = 1; // Variável global para rastrear a página atual
     let searchTerm = ""; // Variável global para armazenar o termo de pesquisa
-    
-    // Função para carregar os movimentados do Firestore e exibir os movimentados
-    async function exibirMovimentados() {
-        document.getElementById('loading-lista-movimentados').style.display = 'flex';
+
+    // Carregar Movimentados já existentes com paginação e pesquisa
+    function exibirMovimentados() {
+        document.getElementById('loading-lista-movimentados').style.display = 'flex'
         document.getElementById('list-movimentado-area').innerHTML = '';
-        
-        const movimentadosRef = collection(firestore, 'controledeacessocomercial/movimentados'); // Mudança para Firestore
-        
-        try {
-            const snapshot = await getDocs(movimentadosRef); // Usando getDocs para Firestore
-            const data = snapshot.docs.map(doc => doc.data()); // Convertendo para array de dados
-    
+        const movimentadosRef = ref(database, 'controledeacessocomercial/movimentados');
+
+        get(movimentadosRef).then((snapshot) => {
+            const data = snapshot.val();
+
             if (data) {
-                const movimentados = data; // Dados vindos do Firestore
+                const movimentados = Object.values(data);
                 const itemsPerPage = 20; // Número de usuários por página
-    
+
                 // Função para renderizar a página atual
-                async function renderPage(page, filteredData) {
-                    document.getElementById('loading-lista-movimentados').style.display = 'flex';
+                function renderPage(page, filteredData) {
+                    document.getElementById('loading-lista-movimentados').style.display = 'flex'
                     document.getElementById('list-movimentado-area').innerHTML = '';
                     currentPage = page; // Atualiza a página atual
                     const startIndex = (page - 1) * itemsPerPage;
                     const endIndex = startIndex + itemsPerPage;
                     const paginatedData = filteredData.slice(startIndex, endIndex);
-    
-                    for (let movimentado of paginatedData) {
-                        // Recupera a imagem em Base64 diretamente do Firestore
-                        const fotoBase64 = movimentado.fotoBase64 || './../img/profile.png'; // Usa a imagem padrão se não houver Base64
-    
-                        // Adiciona o HTML para o movimentado
+
+                    
+
+                    paginatedData.forEach((movimentado) => {
                         document.getElementById('list-movimentado-area').innerHTML += `
                             <ul class="movimentado-ul" id="movimentado-ul-${movimentado.uuid}" data-movimentado-uuid="${movimentado.uuid}">
                                 <li>
-                                    <div class="movimentado-foto-list" style="background-image: url(${fotoBase64})"></div>
+                                    <div class="movimentado-foto-list" style="background-image: url(${movimentado.foto})"></div>
                                 </li>
                                 <li>
                                     <p class="nome-movimentado">${movimentado.nome}</p>
@@ -507,18 +510,18 @@ loadFaceAPI();
                                 </li>
                             </ul><br>
                         `;
-                    }
-                    document.getElementById('loading-lista-movimentados').style.display = 'none';
-    
+                    });
+                    document.getElementById('loading-lista-movimentados').style.display = 'none'
+
                     renderPagination(filteredData);
                 }
-    
+
                 // Função para criar os botões de paginação
                 function renderPagination(filteredData) {
                     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
                     const paginationArea = document.getElementById('pagination-area');
                     paginationArea.innerHTML = '';
-    
+
                     for (let i = 1; i <= totalPages; i++) {
                         const button = document.createElement('button');
                         button.textContent = i;
@@ -529,7 +532,7 @@ loadFaceAPI();
                         paginationArea.appendChild(button);
                     }
                 }
-    
+
                 // Função para aplicar o filtro de pesquisa
                 function applyFilter() {
                     const filteredData = movimentados.filter((movimentado) => {
@@ -539,31 +542,29 @@ loadFaceAPI();
                             (movimentado.celular && movimentado.celular.includes(searchTerm))
                         );
                     });
-    
+
                     // Reinicia a paginação para a página 1 ao pesquisar
                     renderPage(1, filteredData);
                 }
-    
+
                 // Listener para o input de pesquisa
                 const searchInput = document.getElementById('procurar-movimentado-input');
                 searchInput.addEventListener('input', (e) => {
                     searchTerm = e.target.value.toLowerCase();
                     applyFilter();
                 });
-    
+
                 // Renderizar a página armazenada ou inicial
                 applyFilter();
             }
-        } catch (error) {
-            console.error("Erro ao carregar movimentados:", error);
-        }
+        });
     }
-    
+
     // Exemplo de uso inicial
     exibirMovimentados();
-    
-    
-    
+
+
+
     //Editar ou Excluir o Movimentado
     document.getElementById('list-movimentado-area').addEventListener('click', (e)=>{
         const id = e.target.id
@@ -619,7 +620,7 @@ function generateUUID() {
         var file = e.target.files[0];
     
         if (file) {
-            resizeImage(file, 150, 150, function(resizedBlob) {
+            resizeImage(file, 500, 500, function(resizedBlob) {
                 var reader = new FileReader();
                 reader.onload = function() {
                     var base64String = reader.result;
@@ -635,138 +636,156 @@ function generateUUID() {
             document.getElementById('cadastro-movimentado-foto').style.backgroundImage = 'url(./../img/profile.png)'
         })
 
-        async function captureAndSaveMovimentado() {
-            document.getElementById('white-background').style.display = 'block';
-        
-            if (!modelLoaded) {
-                console.warn("Modelo ainda não carregado. Aguardando...");
-                await loadFaceAPI();
-            }
-        
-            const foto = document.getElementById('cadastro-movimentado-foto').style.backgroundImage.replace(/url\(["']?|["']?\)/g, '');
-            const nomeCompleto = document.getElementById('nome-completo-cadastro-movimentado-input').value.trim();
-            const nomeUsuario = document.getElementById('nome-usuario-cadastro-movimentado-input').value.trim();
-            const dataNascimento = document.getElementById('nascimento-cadastro-movimentado-input').value;
-            const telefone = document.getElementById('telefone-cadastro-movimentado-input').value;
-            const celular = document.getElementById('celular-cadastro-movimentado-input').value;
-            const cpf = document.getElementById('cpf-cadastro-movimentado-input').value.trim();
-        
-            if (!nomeCompleto || !nomeUsuario || !cpf) {
+async function captureAndSavemovimentado() {
+    document.getElementById('white-background').style.display = 'block'
+    if (!modelLoaded) {
+        console.warn("Modelo ainda não carregado. Aguardando...");
+        await loadFaceAPI(); // Espera o modelo carregar se não estiver carregado
+    }
+
+    const foto = document.getElementById('cadastro-movimentado-foto').style.backgroundImage.replace(/url\(["']?|["']?\)/g, '');
+    const nomeCompleto = document.getElementById('nome-completo-cadastro-movimentado-input').value.trim();
+    const nomeUsuario = document.getElementById('nome-usuario-cadastro-movimentado-input').value.trim();
+    const dataNascimento = document.getElementById('nascimento-cadastro-movimentado-input').value;
+    const telefone = document.getElementById('telefone-cadastro-movimentado-input').value;
+    const celular = document.getElementById('celular-cadastro-movimentado-input').value;
+    const cpf = document.getElementById('cpf-cadastro-movimentado-input').value.trim();
+
+    // Validação: Se nome, nome de usuário ou CPF estiverem vazios, exibir Toastify e interromper
+    if (!nomeCompleto || !nomeUsuario || !cpf) {
+        Toastify({
+            text: "Preencha todos os campos obrigatórios: Nome Completo, Local de Destino e CPF.",
+            duration: 3000,
+            gravity: "top",
+            position: "center",
+            backgroundColor: "red",
+        }).showToast();
+        document.getElementById('white-background').style.display = 'none'
+        return;
+    }
+
+    // Criar o objeto de movimentação
+    const usermovimentadoObject = {
+        nome: nomeCompleto,
+        usuario: nomeUsuario,
+        foto: foto,
+        descritores: [], // Para armazenar os descritores faciais
+        nascimento: dataNascimento,
+        telefone: telefone,
+        celular: celular,
+        cpf: cpf,
+    };
+
+    try {
+        // Verificar se já existe algum movimentado com os mesmos dados
+        const movimentadosRef = ref(database, 'controledeacessocomercial/movimentados/');
+        const snapshot = await get(movimentadosRef);
+        const existingMovimentados = snapshot.val();
+
+        // Verificar duplicidade
+        for (let key in existingMovimentados) {
+            const movimentado = existingMovimentados[key];
+            if (movimentado.nome === nomeCompleto &&  movimentado.cpf === cpf) {
                 Toastify({
-                    text: "Preencha todos os campos obrigatórios: Nome Completo, Local de Destino e CPF.",
+                    text: "Já existe um movimentado com esses dados obrigatórios.",
                     duration: 3000,
                     gravity: "top",
                     position: "center",
                     backgroundColor: "red",
                 }).showToast();
-                document.getElementById('white-background').style.display = 'none';
+                document.getElementById('white-background').style.display = 'none'
                 return;
             }
-        
-            const usermovimentadoObject = {
-                nome: nomeCompleto,
-                usuario: nomeUsuario,
-                descritores: [],
-                nascimento: dataNascimento,
-                telefone: telefone,
-                celular: celular,
-                cpf: cpf,
-                createdAt: serverTimestamp()
-            };
-        
-            try {
-                const movimentadosRef = ref(database, 'controledeacessocomercial/movimentados/');
-                const snapshot = await get(movimentadosRef);
-                const existingMovimentados = snapshot.val();
-        
-                for (let key in existingMovimentados) {
-                    const movimentado = existingMovimentados[key];
-                    if (movimentado.nome === nomeCompleto && movimentado.cpf === cpf) {
-                        Toastify({
-                            text: "Já existe um movimentado com esses dados obrigatórios.",
-                            duration: 3000,
-                            gravity: "top",
-                            position: "center",
-                            backgroundColor: "red",
-                        }).showToast();
-                        document.getElementById('white-background').style.display = 'none';
-                        return;
-                    }
-                }
-        
-                const image = new Image();
-                image.crossOrigin = "Anonymous";
-                image.src = foto;
-        
-                await new Promise((resolve, reject) => {
-                    image.onload = resolve;
-                    image.onerror = reject;
-                });
-        
-                const canvas = document.createElement("canvas");
-                const ctx = canvas.getContext("2d");
-        
-                canvas.width = image.width;
-                canvas.height = image.height;
-                ctx.drawImage(image, 0, 0);
-        
-                const detections = await faceapi.detectAllFaces(canvas).withFaceLandmarks().withFaceDescriptors();
-        
-                if (detections.length > 0) {
-                    usermovimentadoObject.descritores = detections.map(det => Array.from(det.descriptor));
-                }
-        
-                const base64Image = canvas.toDataURL("image/jpeg", 0.8);
-        
-                // Salvar a imagem no Firestore
-                const firestoreDocRef = await addDoc(collection(firestore, "movimentados"), {
-                    fotoBase64: base64Image,
-                    timestamp: serverTimestamp(),
-                });
-        
-                // Atualizar o objeto com o ID da imagem no Firestore
-                usermovimentadoObject.fotoRef = firestoreDocRef.id;
-        
-                // Salvar os dados restantes no Realtime Database
-                const newMovimentadoRef = push(movimentadosRef);
-                const newUUID = newMovimentadoRef.key;
-        
-                usermovimentadoObject.uuid = newUUID;
-                await set(newMovimentadoRef, usermovimentadoObject);
-        
-                console.log("Movimentação salva com sucesso:", usermovimentadoObject);
-        
-                Toastify({
-                    text: "Movimentação salva com sucesso!",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "center",
-                    backgroundColor: "green",
-                }).showToast();
-        
-                document.getElementById('cadastro-movimentado-foto').style.backgroundImage = 'url(./../img/profile.png)';
-                document.querySelectorAll('.cadastro-movimentado-area input').forEach(input => {
-                    input.value = '';
-                });
-                exibirMovimentados();
-                document.getElementById('white-background').style.display = 'none';
-            } catch (error) {
-                console.error("Erro ao capturar e salvar movimentação:", error);
-                Toastify({
-                    text: "Erro ao salvar movimentação.",
-                    duration: 3000,
-                    gravity: "top",
-                    position: "center",
-                    backgroundColor: "red",
-                }).showToast();
-                document.getElementById('white-background').style.display = 'none';
-            }
         }
-        
+
+        // Criar imagem e garantir carregamento completo
+        const image = new Image();
+        image.crossOrigin = "Anonymous"; // Para evitar problemas de CORS ao acessar imagens remotas
+        image.src = foto;
+
+        await new Promise((resolve, reject) => {
+            image.onload = resolve;
+            image.onerror = reject;
+        });
+
+        // Criar um canvas para processamento da imagem
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+
+        canvas.width = image.width;
+        canvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+
+        // Detectar rostos e extrair descritores faciais
+        const detections = await faceapi.detectAllFaces(canvas).withFaceLandmarks().withFaceDescriptors();
+
+        if (detections.length > 0) {
+            // Adicionar os descritores ao objeto
+            usermovimentadoObject.descritores = detections.map(det => Array.from(det.descriptor)); // Converte para array normal
+        }
+
+        // Minificar a imagem para garantir que o tamanho seja <= 1MB
+        const maxSize = 1024 * 1024; // 1MB
+        let quality = 1.0;
+        let blob;
+        do {
+            blob = await new Promise((resolve) => {
+                canvas.toBlob(resolve, "image/jpeg", quality);
+            });
+            quality -= 0.1; // Diminuir qualidade até atingir o tamanho desejado
+        } while (blob && blob.size > maxSize && quality > 0.1);
+
+        if (!blob) {
+            throw new Error("Falha ao processar a imagem.");
+        }
+
+        // Atualizar o objeto com a nova URL da imagem
+        usermovimentadoObject.foto = foto;
+
+        // Agora o Firebase gera o ID automaticamente e o usamos como UUID
+        const newMovimentadoRef = push(movimentadosRef);
+        const newUUID = newMovimentadoRef.key; // O ID gerado pelo push
+
+        // Adicionar o UUID ao objeto
+        usermovimentadoObject.uuid = newUUID;
+
+        // Salvar no Firebase com a chave UUID gerada
+        await set(newMovimentadoRef, usermovimentadoObject);
+
+        console.log('Movimentação salva:', usermovimentadoObject);
+
+        // Exibir Toastify de sucesso
+        Toastify({
+            text: "Movimentação salva com sucesso!",
+            duration: 3000,
+            gravity: "top",
+            position: "center",
+            backgroundColor: "green",
+        }).showToast();
+
+        document.getElementById('cadastro-movimentado-foto').style.backgroundImage = 'url(./../img/profile.png)'
+        document.querySelectorAll('.cadastro-movimentado-area input').forEach((input)=>{
+            input.value = ''
+        })
+        exibirMovimentados()
+        document.getElementById('white-background').style.display = 'none'
+
+    } catch (error) {
+        console.error("Erro ao capturar e salvar movimentação:", error);
+        Toastify({
+            text: "Erro ao salvar movimentação.",
+            duration: 3000,
+            gravity: "top",
+            position: "center",
+            backgroundColor: "red",
+        }).showToast();
+        document.getElementById('white-background').style.display = 'none'
+    }
+}
 
 
 // Chamar essa função quando for salvar o movimentado
-document.getElementById('salvar-cadastro-movimentado-btn').addEventListener('click', captureAndSaveMovimentado);
+document.getElementById('salvar-cadastro-movimentado-btn').addEventListener('click', captureAndSavemovimentado);
 
 
 
@@ -1080,93 +1099,3 @@ document.getElementById('select-camera-painel').addEventListener('change', ()=>{
             }
         })
 
-
-        //Migração
-        
-        // async function migratePhotosToFirestore() {
-        //     try {
-        //         const movimentadosRef = ref(database, 'controledeacessocomercial/movimentados/');
-        //         const snapshot = await get(movimentadosRef);
-        
-        //         if (!snapshot.exists()) {
-        //             console.log("Nenhum usuário encontrado no Realtime Database.");
-        //             return;
-        //         }
-        
-        //         const movimentados = snapshot.val();
-        //         for (let key in movimentados) {
-        //             const movimentado = movimentados[key];
-        //             const fotoBase64 = movimentado.foto; // Foto original em base64
-        
-        //             if (!fotoBase64) {
-        //                 console.warn(`Usuário ${movimentado.nome} não possui uma foto para migrar.`);
-        //                 continue;
-        //             }
-        
-        //             // Converte o Base64 para Blob
-        //             const blob = await fetch(fotoBase64).then(res => res.blob());
-        
-        //             // Reduzir a imagem usando a função de redimensionamento
-        //             const resizedBlob = await resizeImageMigracao(blob, 150, 150);
-        
-        //             // Converter o Blob redimensionado de volta para Base64
-        //             const resizedBase64 = await blobToBase64(resizedBlob);
-        
-        //             // Criar o documento no Firestore apenas com a foto redimensionada
-        //             const firestoreDocRef = await addDoc(collection(firestore, "movimentados_fotos"), {
-        //                 fotoBase64: resizedBase64,
-        //                 nome: movimentado.nome || "Sem nome",
-        //                 cpf: movimentado.cpf || "Sem CPF",
-        //                 timestamp: serverTimestamp(),
-        //             });
-        
-        //             console.log(`Foto do usuário ${movimentado.nome} migrada com sucesso! Documento Firestore ID: ${firestoreDocRef.id}`);
-        
-        //             // Atualizar o Realtime Database: remover a foto e adicionar fotoRef
-        //             const movimentadoRef = child(movimentadosRef, key);
-        //             await update(movimentadoRef, {
-        //                 foto: null, // Remove a foto
-        //                 fotoRef: firestoreDocRef.id // Adiciona a referência ao Firestore
-        //             });
-        
-        //             console.log(`Dados do usuário ${movimentado.nome} atualizados no Realtime Database.`);
-        //         }
-        
-        //         console.log("Migração de fotos concluída!");
-        //     } catch (error) {
-        //         console.error("Erro durante a migração de fotos:", error);
-        //     }
-        // }
-        
-        // // Função de redimensionamento da imagem
-        // function resizeImageMigracao(blob, width, height) {
-        //     return new Promise((resolve, reject) => {
-        //         const img = new Image();
-        //         img.onload = () => {
-        //             const canvas = document.createElement("canvas");
-        //             const ctx = canvas.getContext("2d");
-        
-        //             canvas.width = width;
-        //             canvas.height = height;
-        //             ctx.drawImage(img, 0, 0, width, height);
-        
-        //             canvas.toBlob(resolve, "image/jpeg", 0.8);
-        //         };
-        //         img.onerror = reject;
-        
-        //         const url = URL.createObjectURL(blob);
-        //         img.src = url;
-        //     });
-        // }
-        
-        // // Função para converter Blob em Base64
-        // function blobToBase64(blob) {
-        //     return new Promise((resolve, reject) => {
-        //         const reader = new FileReader();
-        //         reader.onloadend = () => resolve(reader.result);
-        //         reader.onerror = reject;
-        //         reader.readAsDataURL(blob);
-        //     });
-        // }
-
-        // migratePhotosToFirestore(database, firestore);
